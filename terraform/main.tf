@@ -10,7 +10,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket         = "research-agent-tfstate"
+    bucket         = "research-agent-tfstate-anamika2026"
     key            = "terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "research-agent-tf-locks"
@@ -116,8 +116,8 @@ variable "acm_certificate_arn" {
 data "aws_availability_zones" "available" {}
 
 locals {
-  azs            = slice(data.aws_availability_zones.available.names, 0, 2)
-  https_enabled  = var.acm_certificate_arn != ""
+  azs           = slice(data.aws_availability_zones.available.names, 0, 2)
+  https_enabled = var.acm_certificate_arn != ""
 }
 
 # —— VPC ——
@@ -322,12 +322,36 @@ resource "aws_bedrock_guardrail" "main" {
   blocked_outputs_messaging = "The generated response was blocked by our content safety policy."
 
   content_policy_config {
-    filters_config { type = "HATE";          input_strength = "HIGH"; output_strength = "HIGH" }
-    filters_config { type = "VIOLENCE";      input_strength = "HIGH"; output_strength = "HIGH" }
-    filters_config { type = "SEXUAL";        input_strength = "HIGH"; output_strength = "HIGH" }
-    filters_config { type = "INSULTS";       input_strength = "HIGH"; output_strength = "HIGH" }
-    filters_config { type = "MISCONDUCT";    input_strength = "HIGH"; output_strength = "HIGH" }
-    filters_config { type = "PROMPT_ATTACK"; input_strength = "HIGH"; output_strength = "NONE" }
+    filters_config {
+      type            = "HATE"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+    filters_config {
+      type            = "VIOLENCE"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+    filters_config {
+      type            = "SEXUAL"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+    filters_config {
+      type            = "INSULTS"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+    filters_config {
+      type            = "MISCONDUCT"
+      input_strength  = "HIGH"
+      output_strength = "HIGH"
+    }
+    filters_config {
+      type            = "PROMPT_ATTACK"
+      input_strength  = "HIGH"
+      output_strength = "NONE"
+    }
   }
 
   topic_policy_config {
@@ -352,15 +376,32 @@ resource "aws_bedrock_guardrail" "main" {
   }
 
   sensitive_information_policy_config {
-    pii_entities_config { type = "US_SOCIAL_SECURITY_NUMBER"; action = "BLOCK" }
-    pii_entities_config { type = "CREDIT_DEBIT_CARD_NUMBER";  action = "BLOCK" }
-    pii_entities_config { type = "AWS_ACCESS_KEY";            action = "BLOCK" }
-    pii_entities_config { type = "EMAIL";                     action = "ANONYMIZE" }
-    pii_entities_config { type = "PHONE";                     action = "ANONYMIZE" }
+    pii_entities_config {
+      type   = "US_SOCIAL_SECURITY_NUMBER"
+      action = "BLOCK"
+    }
+    pii_entities_config {
+      type   = "CREDIT_DEBIT_CARD_NUMBER"
+      action = "BLOCK"
+    }
+    pii_entities_config {
+      type   = "AWS_ACCESS_KEY"
+      action = "BLOCK"
+    }
+    pii_entities_config {
+      type   = "EMAIL"
+      action = "ANONYMIZE"
+    }
+    pii_entities_config {
+      type   = "PHONE"
+      action = "ANONYMIZE"
+    }
   }
 
   word_policy_config {
-    managed_word_lists_config { type = "PROFANITY" }
+    managed_word_lists_config {
+      type = "PROFANITY"
+    }
   }
 }
 
@@ -396,25 +437,25 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_db_instance" "postgres" {
-  identifier              = "${var.project}-postgres"
-  engine                  = "postgres"
-  engine_version          = "15.8"
-  instance_class          = var.db_instance_class
-  allocated_storage       = 20
-  max_allocated_storage   = 100
-  db_name                 = "researchdb"
-  username                = "dbadmin"
-  password                = random_password.db_password.result
-  db_subnet_group_name    = aws_db_subnet_group.main.name
-  vpc_security_group_ids  = [aws_security_group.rds.id]
-  multi_az                = var.db_multi_az
-  deletion_protection     = false
-  skip_final_snapshot     = false
+  identifier                = "${var.project}-postgres"
+  engine                    = "postgres"
+  engine_version            = "15.8"
+  instance_class            = var.db_instance_class
+  allocated_storage         = 20
+  max_allocated_storage     = 100
+  db_name                   = "researchdb"
+  username                  = "dbadmin"
+  password                  = random_password.db_password.result
+  db_subnet_group_name      = aws_db_subnet_group.main.name
+  vpc_security_group_ids    = [aws_security_group.rds.id]
+  multi_az                  = var.db_multi_az
+  deletion_protection       = false
+  skip_final_snapshot       = false
   final_snapshot_identifier = "${var.project}-postgres-final-snapshot"
-  backup_retention_period = 7
-  backup_window           = "03:00-04:00"
-  maintenance_window      = "sun:05:00-sun:06:00"
-  tags                    = { Name = "${var.project}-postgres" }
+  backup_retention_period   = 7
+  backup_window             = "03:00-04:00"
+  maintenance_window        = "sun:05:00-sun:06:00"
+  tags                      = { Name = "${var.project}-postgres" }
 }
 
 resource "random_password" "db_password" {
@@ -586,41 +627,41 @@ resource "aws_secretsmanager_secret" "config" {
 resource "aws_secretsmanager_secret_version" "config" {
   secret_id = aws_secretsmanager_secret.config.id
   secret_string = jsonencode({
-    OPENAI_API_KEY       = "REPLACE_ME"
-    GROQ_API_KEY         = "REPLACE_ME"
-    LANGSMITH_API_KEY    = "REPLACE_ME"
-    LANGCHAIN_PROJECT    = "research-agent"
-    LANGSMITH_DATASET    = "research-agent-reports"
-    API_KEY              = var.api_key
-    AWS_REGION           = var.aws_region
-    BEDROCK_GUARDRAIL_ID      = aws_bedrock_guardrail.main.guardrail_id
-    BEDROCK_GUARDRAIL_VERSION = aws_bedrock_guardrail_version.main.version
-    REDIS_URL            = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379"
-    TENSORZERO_URL       = "http://localhost:3000"
-    DATABASE_URL         = "postgresql://dbadmin:${random_password.db_password.result}@${aws_db_instance.postgres.endpoint}/researchdb"
+    OPENAI_API_KEY             = "REPLACE_ME"
+    GROQ_API_KEY               = "REPLACE_ME"
+    LANGSMITH_API_KEY          = "REPLACE_ME"
+    LANGCHAIN_PROJECT          = "research-agent"
+    LANGSMITH_DATASET          = "research-agent-reports"
+    API_KEY                    = var.api_key
+    AWS_REGION                 = var.aws_region
+    BEDROCK_GUARDRAIL_ID       = aws_bedrock_guardrail.main.guardrail_id
+    BEDROCK_GUARDRAIL_VERSION  = aws_bedrock_guardrail_version.main.version
+    REDIS_URL                  = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379"
+    TENSORZERO_URL             = "http://localhost:3000"
+    DATABASE_URL               = "postgresql://dbadmin:${random_password.db_password.result}@${aws_db_instance.postgres.endpoint}/researchdb"
     CACHE_TTL                  = "3600"
     CACHE_SIMILARITY_THRESHOLD = "0.85"
     SESSION_TTL                = "1800"
     SESSION_MAX_MESSAGES       = "5"
     SESSION_CONTENT_TRUNCATE   = "500"
     LTM_DAYS                   = "7"
-    LTM_THRESHOLD               = "0.88"
-    LTM_DIFF_THRESHOLD          = "0.7"
-    LTM_DIFF_LIMIT              = "5"
-    IVFFLAT_LISTS               = "100"
-    STREAM_KEY                  = "research:jobs"
-    CONSUMER_GROUP               = "workers"
-    RESULT_TTL                   = "3600"
-    AGENT_REPORT_TRUNCATE        = "3000"
-    AGENT_MAX_ITERATIONS         = "2"
-    EVAL_REPORT_TRUNCATE         = "1500"
-    EVAL_COMMENT_TRUNCATE        = "300"
-    LLM_MAX_RETRIES              = "3"
-    LLM_RETRY_DELAY              = "1.0"
-    RATE_LIMIT_REQUESTS          = "10"
-    RATE_LIMIT_WINDOW            = "60"
-    DB_POOL_MIN                  = "2"
-    DB_POOL_MAX                  = "10"
+    LTM_THRESHOLD              = "0.88"
+    LTM_DIFF_THRESHOLD         = "0.7"
+    LTM_DIFF_LIMIT             = "5"
+    IVFFLAT_LISTS              = "100"
+    STREAM_KEY                 = "research:jobs"
+    CONSUMER_GROUP             = "workers"
+    RESULT_TTL                 = "3600"
+    AGENT_REPORT_TRUNCATE      = "3000"
+    AGENT_MAX_ITERATIONS       = "2"
+    EVAL_REPORT_TRUNCATE       = "1500"
+    EVAL_COMMENT_TRUNCATE      = "300"
+    LLM_MAX_RETRIES            = "3"
+    LLM_RETRY_DELAY            = "1.0"
+    RATE_LIMIT_REQUESTS        = "10"
+    RATE_LIMIT_WINDOW          = "60"
+    DB_POOL_MIN                = "2"
+    DB_POOL_MAX                = "10"
   })
 }
 
@@ -659,7 +700,7 @@ resource "aws_ecs_task_definition" "app" {
       portMappings = [{ containerPort = 3000, protocol = "tcp" }]
       secrets = [
         { name = "OPENAI_API_KEY", valueFrom = "${aws_secretsmanager_secret.config.arn}:OPENAI_API_KEY::" },
-        { name = "GROQ_API_KEY",   valueFrom = "${aws_secretsmanager_secret.config.arn}:GROQ_API_KEY::" }
+        { name = "GROQ_API_KEY", valueFrom = "${aws_secretsmanager_secret.config.arn}:GROQ_API_KEY::" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -691,7 +732,7 @@ resource "aws_ecs_task_definition" "pyrit" {
       environment = [
         { name = "TARGET_URL", value = "http://${aws_lb.main.dns_name}" },
         { name = "AWS_REGION", value = var.aws_region },
-        { name = "REDIS_URL",  value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}" }
+        { name = "REDIS_URL", value = "redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}" }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -783,21 +824,27 @@ resource "aws_ecr_repository" "app" {
   name                 = "${var.project}-app"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_repository" "pyrit" {
   name                 = "${var.project}-pyrit"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_repository" "tensorzero" {
   name                 = "${var.project}-tensorzero"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 # —— EventBridge (weekly red team) ——
@@ -814,7 +861,7 @@ resource "aws_cloudwatch_event_target" "redteam_ecs" {
 
   ecs_target {
     task_definition_arn = aws_ecs_task_definition.pyrit.arn
-    launch_type          = "FARGATE"
+    launch_type         = "FARGATE"
     network_configuration {
       subnets          = aws_subnet.public[*].id
       security_groups  = [aws_security_group.ecs_tasks.id]
@@ -847,8 +894,8 @@ resource "aws_iam_role_policy" "eventbridge_ecs_policy" {
         Resource = aws_ecs_task_definition.pyrit.arn
       },
       {
-        Effect   = "Allow"
-        Action   = ["iam:PassRole"]
+        Effect = "Allow"
+        Action = ["iam:PassRole"]
         Resource = [
           aws_iam_role.ecs_task_execution.arn,
           aws_iam_role.ecs_task.arn

@@ -2,7 +2,7 @@
 setlocal
 
 set REGION=us-east-1
-set BUCKET=research-agent-tfstate
+set BUCKET=research-agent-tfstate-anamika2026
 set TABLE=research-agent-tf-locks
 
 echo Creating S3 bucket: %BUCKET% in region: %REGION%
