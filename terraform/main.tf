@@ -452,7 +452,7 @@ resource "aws_db_instance" "postgres" {
   deletion_protection       = false
   skip_final_snapshot       = false
   final_snapshot_identifier = "${var.project}-postgres-final-snapshot"
-  backup_retention_period   = 7
+  backup_retention_period   = 1
   backup_window             = "03:00-04:00"
   maintenance_window        = "sun:05:00-sun:06:00"
   tags                      = { Name = "${var.project}-postgres" }
@@ -567,6 +567,19 @@ resource "aws_iam_role" "ecs_task_execution" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_iam_role_policy" "ecs_execution_secrets" {
+  name = "${var.project}-execution-secrets"
+  role = aws_iam_role.ecs_task_execution.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = aws_secretsmanager_secret.config.arn
+    }]
+  })
 }
 
 resource "aws_iam_role" "ecs_task" {
